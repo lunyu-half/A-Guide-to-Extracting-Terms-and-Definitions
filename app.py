@@ -8,9 +8,10 @@ from llama_index.core import (
     VectorStoreIndex,
     StorageContext,
 )
-from llama_index.llms.openai import OpenAI
+##from llama_index.llms.openai import OpenAI
+from llama_index.llms.mistralai import MistralAI
 from llama_index.core import Settings
-
+from llama_index.embeddings.mistralai import MistralAIEmbedding
 
 from llama_index.core import (
     PromptTemplate,
@@ -76,7 +77,7 @@ DEFAULT_TERM_STR = (
     "Make a list of terms and definitions that are defined in the context, "
     "with one pair on each line. "
     "If a term is missing it's definition, use your best judgment. "
-    "Write each line as as follows:\nTerm: <term> Definition: <definition>"
+    "Write each line as as follows: \n Term: <term> Definition: <definition>"
 )
 
 
@@ -86,8 +87,8 @@ def get_llm(
     api_key,
     max_tokens=256,
 ):
-    os.environ["OPENAI_API_KEY"] = api_key
-    return OpenAI(
+    os.environ["MISTRAL_API_KEY"] = api_key
+    return MistralAI(
         temperature=model_temperature,
         model=llm_name,
         max_tokens=max_tokens,
@@ -178,11 +179,12 @@ def insert_terms(terms_to_definition):
         doc = Document(text=f"Term: {term}\nDefinition: {definition}")
         st.session_state["llama_index"].insert(doc)
 
-
 @st.cache_resource
 def initialize_index(llm_name, model_temperature, api_key):
     """Create the VectorStoreIndex object."""
     Settings.llm = get_llm(llm_name, model_temperature, api_key)
+    Settings.embed_model = MistralAIEmbedding(api_key=os.environ["MISTRAL_API_KEY"])
+    ##Settings.embed_model = HuggingFaceEmbedding(model_name="bert-large-uncased")
 
     # create a vector store index for each folder
     try:
@@ -222,8 +224,8 @@ setup_tab, terms_tab, upload_tab, query_tab = st.tabs(
 
 with setup_tab:
     st.subheader("LLM Setup")
-    api_key = st.text_input("Enter your OpenAI API key here", type="password")
-    llm_name = st.selectbox("Choose an LLM", ["gpt-3.5-turbo", "gpt-4"])
+    api_key = st.text_input("Enter your Mistral API key here", type="password")
+    llm_name = st.selectbox("Choose an LLM", ["mistral-small-latest", "mistral-large-latest"])
     model_temperature = st.slider(
         "Model Temperature", min_value=0.0, max_value=1.0, value=0.0, step=0.1
     )
